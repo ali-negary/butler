@@ -1,7 +1,8 @@
-from datetime import date, datetime, time
-from typing import Optional, List, Any
+from datetime import timezone
+from datetime import date as _date, datetime, time
+from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, DateTime, Float as SAFloat, Integer as SAInteger, String as SAString, Boolean as SABoolean, JSON as SAJSON, Date as SADate, Time as SATime, Text
+from sqlalchemy import DateTime, JSON, Text, Column
 
 
 class DailyVitalsBase(SQLModel):
@@ -20,14 +21,12 @@ class DailyVitalsBase(SQLModel):
 class DailyVitals(DailyVitalsBase, table=True):
     __tablename__ = "daily_vitals"
 
-    date: date = Field(primary_key=True)
-    created_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
-    updated_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
+    date: _date = Field(primary_key=True)
+    created_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
 
 
 class DailyVitalsRead(DailyVitalsBase):
-    date: date
-    id: int = Field(description="Internal read-only identifier")
+    date: _date
 
 
 class DailyVitalsCreate(DailyVitalsBase):
@@ -47,10 +46,10 @@ class DailyVitalsUpdate(SQLModel):
     morning_weight_kg: Optional[float] = None
 
 
-# Strength Session
+# ── Strength Session ───────────────────────────────────────────────────────
 
 class StrengthSessionBase(SQLModel):
-    date: date
+    date: _date
     start_time: Optional[time] = None
     end_time: Optional[time] = None
     location: str = "Gym"
@@ -63,8 +62,8 @@ class StrengthSession(StrengthSessionBase, table=True):
     __tablename__ = "strength_sessions"
 
     id: int = Field(default=None, primary_key=True)
-    created_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
-    updated_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
+    created_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
+    updated_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
     sets: List["StrengthSet"] = Relationship(back_populates="session")
 
 
@@ -78,7 +77,7 @@ class StrengthSessionCreate(StrengthSessionBase):
 
 
 class StrengthSessionUpdate(SQLModel):
-    date: Optional[date] = None
+    date: Optional[_date] = None
     start_time: Optional[time] = None
     end_time: Optional[time] = None
     location: Optional[str] = None
@@ -87,7 +86,7 @@ class StrengthSessionUpdate(SQLModel):
     session_notes: Optional[str] = None
 
 
-# Strength Set
+# ── Strength Set ───────────────────────────────────────────────────────────
 
 class StrengthSetBase(SQLModel):
     exercise_name: str
@@ -103,8 +102,8 @@ class StrengthSet(StrengthSetBase, table=True):
 
     id: int = Field(default=None, primary_key=True)
     session_id: int = Field(foreign_key="strength_sessions.id")
-    created_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
-    updated_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
+    created_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
+    updated_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
     session: Optional[StrengthSession] = Relationship(back_populates="sets")
 
 
@@ -126,10 +125,10 @@ class StrengthSetUpdate(SQLModel):
     notes: Optional[str] = None
 
 
-# Cardio Session
+# ── Cardio Session ─────────────────────────────────────────────────────────
 
 class CardioSessionBase(SQLModel):
-    date: date
+    date: _date
     start_time: Optional[time] = None
     end_time: Optional[time] = None
     activity_type: str = "Run"
@@ -146,8 +145,8 @@ class CardioSession(CardioSessionBase, table=True):
     __tablename__ = "cardio_sessions"
 
     id: int = Field(default=None, primary_key=True)
-    created_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
-    updated_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
+    created_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
+    updated_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
 
 
 class CardioSessionRead(CardioSessionBase):
@@ -159,7 +158,7 @@ class CardioSessionCreate(CardioSessionBase):
 
 
 class CardioSessionUpdate(SQLModel):
-    date: Optional[date] = None
+    date: Optional[_date] = None
     start_time: Optional[time] = None
     end_time: Optional[time] = None
     activity_type: Optional[str] = None
@@ -172,10 +171,10 @@ class CardioSessionUpdate(SQLModel):
     notes: Optional[str] = None
 
 
-# Lifestyle Session
+# ── Lifestyle Session ─────────────────────────────────────────────────────
 
 class LifestyleSessionBase(SQLModel):
-    date: date
+    date: _date
     start_time: Optional[time] = None
     duration_minutes: float
     activity_type: str = "General Social"
@@ -187,8 +186,8 @@ class LifestyleSession(LifestyleSessionBase, table=True):
     __tablename__ = "lifestyle_sessions"
 
     id: int = Field(default=None, primary_key=True)
-    created_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
-    updated_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
+    created_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
+    updated_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
 
 
 class LifestyleSessionRead(LifestyleSessionBase):
@@ -200,7 +199,7 @@ class LifestyleSessionCreate(LifestyleSessionBase):
 
 
 class LifestyleSessionUpdate(SQLModel):
-    date: Optional[date] = None
+    date: Optional[_date] = None
     start_time: Optional[time] = None
     duration_minutes: Optional[float] = None
     activity_type: Optional[str] = None
@@ -208,7 +207,7 @@ class LifestyleSessionUpdate(SQLModel):
     perceived_fatigue_post_event: Optional[int] = Field(default=None, ge=1, le=10)
 
 
-# Nutrition Log
+# ── Nutrition Log ──────────────────────────────────────────────────────────
 
 class NutritionLogBase(SQLModel):
     espresso_count: int = 0
@@ -222,13 +221,12 @@ class NutritionLogBase(SQLModel):
 class NutritionLog(NutritionLogBase, table=True):
     __tablename__ = "nutrition_logs"
 
-    date: date = Field(primary_key=True)
-    created_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
-    updated_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
+    date: _date = Field(primary_key=True)
+    created_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
 
 
 class NutritionLogRead(NutritionLogBase):
-    date: date
+    date: _date
 
 
 class NutritionLogCreate(NutritionLogBase):
@@ -244,10 +242,10 @@ class NutritionLogUpdate(SQLModel):
     specific_meals_array: Optional[List[str]] = None
 
 
-# Injury Log
+# ── Injury Log ─────────────────────────────────────────────────────────────
 
 class InjuryLogBase(SQLModel):
-    date_logged: date
+    date_logged: _date
     body_part: str
     status: str = "Sore"
     pain_scale: int = Field(default=5, ge=1, le=10)
@@ -259,8 +257,8 @@ class InjuryLog(InjuryLogBase, table=True):
     __tablename__ = "injury_logs"
 
     id: int = Field(default=None, primary_key=True)
-    created_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
-    updated_at: Optional[DateTime] = Field(default=None, sa_column=Column(DateTime))
+    created_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
+    updated_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime, nullable=True))
 
 
 class InjuryLogRead(InjuryLogBase):
@@ -279,7 +277,7 @@ class InjuryLogUpdate(SQLModel):
     notes: Optional[str] = None
 
 
-# User
+# ── User ───────────────────────────────────────────────────────────────────
 
 class UserBase(SQLModel):
     email: str
@@ -292,7 +290,7 @@ class User(UserBase, table=True):
     id: int = Field(default=None, primary_key=True)
     hashed_password: str = Field(sa_column=Column(Text))
     is_active: bool = True
-    created_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class UserRead(UserBase):
@@ -305,7 +303,7 @@ class UserCreate(UserBase):
     password: str
 
 
-# Conversation
+# ── Conversation ───────────────────────────────────────────────────────────
 
 class ConversationBase(SQLModel):
     session_summary: str
@@ -319,7 +317,7 @@ class Conversation(ConversationBase, table=True):
     user_id: int = Field(foreign_key="users.id")
     session_type: Optional[str] = None
     session_id: Optional[int] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime))
 
 
 class ConversationRead(ConversationBase):
@@ -337,7 +335,7 @@ class ConversationCreate(SQLModel):
     session_summary: str
 
 
-# LLM Config
+# ── LLM Config ─────────────────────────────────────────────────────────────
 
 class LLMConfigBase(SQLModel):
     provider: str = "openai"
@@ -350,8 +348,8 @@ class LLMConfig(LLMConfigBase, table=True):
     __tablename__ = "llm_configs"
 
     id: int = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime))
-    updated_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime))
 
 
 class LLMConfigRead(LLMConfigBase):

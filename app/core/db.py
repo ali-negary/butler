@@ -3,17 +3,37 @@ from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from app.core.config import get_settings
 
-settings = get_settings()
+_settings = get_settings()
 
-engine = create_async_engine(settings.database_url, echo=False)
+_engine = None
+_sync_engine = None
+_factory = None
 
-async_session_factory = async_sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
-)
+
+def get_engine():
+    global _engine, _factory
+    if _engine is None:
+        _engine = create_async_engine(_settings.database_url, echo=False)
+        _factory = async_sessionmaker(
+            _engine, class_=AsyncSession, expire_on_commit=False
+        )
+    return _engine, _factory
+
+
+def get_factory():
+    return get_engine()[1]
+
+
+def get_sync_engine():
+    global _sync_engine
+    if _sync_engine is None:
+        _sync_engine = create_engine(_settings.sync_database_url)
+    return _sync_engine
 
 
 async def get_db() -> AsyncSession:
-    async with async_session_factory() as session:
+    eng, fac = get_engine()
+    async with fac() as session:
         try:
             yield session
         except Exception:
@@ -24,6 +44,6 @@ async def get_db() -> AsyncSession:
 
 
 def get_sync_db() -> Session:
-    sync_engine = create_engine(settings.sync_database_url)
-    with Session(sync_engine) as session:
+    se = get_sync_engine()
+    with Session(se) as session:
         yield session

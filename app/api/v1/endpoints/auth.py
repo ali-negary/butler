@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Form
 from sqlmodel import Session, select
 from app.models.domain_models import User as UserModel
 from app.schemas.domain_schemas import UserCreate, UserRead, Token
@@ -14,7 +14,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     return authenticate_user(db, user_data.email, user_data.password, register=True, full_name=user_data.full_name)
 
 @router.post("/login", response_model=Token)
-def login(email: str, password: str, db: Session = Depends(get_db)):
+def login(email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = authenticate_user(db, email, password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")

@@ -4,16 +4,16 @@ Project Butler - Personal Health & Fitness API
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import SQLModel, Session, select
+from sqlmodel import SQLModel
 from app.core.config import get_settings
-from app.core.db import engine
+from app.core.db import get_sync_engine
 from app.api.v1.api import api_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Create tables on startup."""
-    SQLModel.metadata.create_all(engine)
+    SQLModel.metadata.create_all(get_sync_engine())
     yield
 
 

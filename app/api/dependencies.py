@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from passlib.context import CryptContext
+from hashlib import sha256
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -12,8 +12,15 @@ SECRET_KEY = "project-butler-dev-secret-key-change-in-production"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+
+def _hash_password(password: str) -> str:
+    return sha256(password.encode()).hexdigest()
+
+
+def _verify_password(plain_password: str, hashed_password: str) -> bool:
+    return _hash_password(plain_password) == hashed_password
 
 
 def create_access_token(data: dict) -> str:
@@ -23,25 +30,17 @@ def create_access_token(data: dict) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
-
-
 def authenticate_user(db: Session, email: str, password: str, register: bool = False, full_name: Optional[str] = None) -> Optional[UserModel]:
     user = db.exec(select(UserModel).where(UserModel.email == email)).first()
     if user:
-        if not verify_password(password, user.hashed_password):
+        if not _verify_password(password, user.hashed_password):
             return None
         return user
     if register:
         new_user = UserModel(
             email=email,
             full_name=full_name,
-            hashed_password=get_password_hash(password),
+            hashed_password=_hash_password(password),
         )
         db.add(new_user)
         db.commit()
