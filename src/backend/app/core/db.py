@@ -1,0 +1,49 @@
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
+from app.core.config import get_settings
+
+_settings = get_settings()
+
+_engine = None
+_sync_engine = None
+_factory = None
+
+
+def get_engine():
+    global _engine, _factory
+    if _engine is None:
+        _engine = create_async_engine(_settings.database_url, echo=False)
+        _factory = async_sessionmaker(
+            _engine, class_=AsyncSession, expire_on_commit=False
+        )
+    return _engine, _factory
+
+
+def get_factory():
+    return get_engine()[1]
+
+
+def get_sync_engine():
+    global _sync_engine
+    if _sync_engine is None:
+        _sync_engine = create_engine(_settings.sync_database_url)
+    return _sync_engine
+
+
+async def get_db() -> AsyncSession:
+    eng, fac = get_engine()
+    async with fac() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+
+def get_sync_db() -> Session:
+    se = get_sync_engine()
+    with Session(se) as session:
+        yield session
