@@ -6,21 +6,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 from app.core.config import get_settings
-from app.core.db import get_sync_engine
+from app.core.db import get_sync_engine, create_db_if_needed
 from app.api.v1.api import api_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create tables on startup."""
-    SQLModel.metadata.create_all(get_sync_engine())
+    create_db_if_needed()
     yield
 
 
 app = FastAPI(
     title="Project Butler",
     description="Personal Health & Fitness Tracking API",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 

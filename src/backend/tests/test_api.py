@@ -393,15 +393,18 @@ async def test_update_injury(client):
     assert resp.json()["status"] == "Recovering"
 
 
-# ── Ingest Stubs ─────────────────────────────────────────────────────────
+# ── Ingest ────────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_ingest_xiaomi_csv_stub(client):
+async def test_ingest_xiaomi_csv(client):
     from io import BytesIO
+    csv_data = b"date,steps,calories,weight\n2024-01-01,10000,2000,82.3\n2024-01-02,8000,1800,81.9\n"
     resp = await client.post("/api/v1/ingest/xiaomi-csv", files={
-        "file": ("test.csv", BytesIO(b"id,date,steps\n1,2024-01-01,10000"), "text/csv")
+        "file": ("test.csv", BytesIO(csv_data), "text/csv")
     })
-    assert resp.status_code == 501
+    data = resp.json()
+    assert resp.status_code == 200
+    assert data["ingested"] == 2
 
 
 @pytest.mark.asyncio
@@ -413,16 +416,38 @@ async def test_ingest_xiaomi_json_stub(client):
     assert resp.status_code == 501
 
 
+# ── Export ────────────────────────────────────────────────────────────────
+
 @pytest.mark.asyncio
-async def test_export_csv_stub(client):
-    resp = await client.get("/api/v1/export/csv")
-    assert resp.status_code == 501
+async def test_export_csv(client):
+    resp = await client.get("/api/v1/ingest/csv")
+    assert resp.status_code == 200
+    assert "text/csv" in resp.headers["content-type"]
 
 
 @pytest.mark.asyncio
-async def test_export_json_stub(client):
-    resp = await client.get("/api/v1/export/json")
-    assert resp.status_code == 501
+async def test_export_json(client):
+    resp = await client.get("/api/v1/ingest/json")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, dict)
+    assert "daily_vitals" in data
+
+
+# ── Auth /me ─────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_me(client):
+    token = await _register_and_login(client, "me1")
+    resp = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    assert "email" in resp.json()
+
+
+@pytest.mark.asyncio
+async def test_me_unauthorized(client):
+    resp = await client.get("/api/v1/auth/me")
+    assert resp.status_code == 401
 
 
 # ── Conversation ─────────────────────────────────────────────────────────

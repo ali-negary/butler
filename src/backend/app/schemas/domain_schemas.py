@@ -243,6 +243,10 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
 
 
+class UserRegister(UserBase):
+    password: str
+
+
 class UserCreate(UserBase):
     password: str
 

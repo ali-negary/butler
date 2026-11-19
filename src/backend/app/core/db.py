@@ -27,8 +27,17 @@ def get_factory():
 def get_sync_engine():
     global _sync_engine
     if _sync_engine is None:
-        _sync_engine = create_engine(_settings.sync_database_url)
+        _sync_engine = create_engine(_settings.sync_database_url, echo=False, pool_pre_ping=True)
     return _sync_engine
+
+
+def create_db_if_needed():
+    try:
+        engine = get_sync_engine()
+        from sqlmodel import SQLModel
+        SQLModel.metadata.create_all(engine)
+    except Exception as e:
+        print(f"Warning: could not create DB tables: {e}")
 
 
 async def get_db() -> AsyncSession:
