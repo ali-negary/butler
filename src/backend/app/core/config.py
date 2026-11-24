@@ -1,21 +1,6 @@
 import os
-import subprocess
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
-
-
-def _get_keychain_password(service: str, account: str) -> str:
-    """Read a password from macOS Keychain."""
-    try:
-        result = subprocess.run(
-            ["security", "find-generic-password", "-s", service, "-a", account, "-w"],
-            capture_output=True, text=True, timeout=5,
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            return result.stdout.strip()
-    except Exception:
-        pass
-    return ""
 
 
 class Settings(BaseSettings):
@@ -48,7 +33,7 @@ class Settings(BaseSettings):
     @property
     def _sync_database_url(self) -> str:
         if self.database_url.startswith("sqlite"):
-            return self.database_url
+            return self.database_url.replace("+aiosqlite", "")
         return self.database_url.replace("postgresql+asyncpg://", "postgresql://")
 
     def model_post_init(self, *_args, **_kwargs):
@@ -66,16 +51,6 @@ class Settings(BaseSettings):
 
         if not self.jwt_secret_key:
             self.jwt_secret_key = os.getenv("JWT_SECRET_KEY", "project-butler-dev-secret-change-in-production")
-
-        # Read secrets from macOS Keychain as fallback (never from env/git)
-        if not self.llm_api_key:
-            key = _get_keychain_password("butler/llm-api-key", "project-butler")
-            if key:
-                self.llm_api_key = key
-        if not self.llm_model:
-            model = _get_keychain_password("butler/llm-model", "project-butler")
-            if model:
-                self.llm_model = model
 
     @property
     def sync_database_url(self) -> str:

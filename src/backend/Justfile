@@ -40,17 +40,17 @@ test-fast: requirements
 lint: requirements
 	../../.venv/bin/mypy app/ --ignore-missing-imports 2>/dev/null || true
 
-# Docker: build and start (Postgres + API)
-docker-up:
-	docker compose up --build
+# Podman: build and start (Postgres + API)
+podman-up:
+	podman compose up --build
 
-# Docker: stop and remove
-docker-down:
-	docker compose down --remove-orphans
+# Podman: stop and remove
+podman-down:
+	podman compose down --remove-orphans
 
-# Docker: stream logs
-docker-logs:
-	docker compose logs -f
+# Podman: stream logs
+podman-logs:
+	podman compose logs -f
 
 # Generate a random JWT secret
 generate-jwt-secret: requirements

@@ -277,32 +277,35 @@ def export_json(
     stmt1 = select(DailyVitals)
     if start_date: stmt1 = stmt1.where(DailyVitals.date >= _date.fromisoformat(start_date))
     if end_date: stmt1 = stmt1.where(DailyVitals.date <= _date.fromisoformat(end_date))
-    result["daily_vitals"] = [DVR.model_validate(v).model_dump() for v in db.exec(stmt1).all()]
+    result["daily_vitals"] = [DVR.model_validate(v).model_dump(mode="json") for v in db.exec(stmt1).all()]
 
     stmt2 = select(StrengthSession).order_by(StrengthSession.date)
     if start_date: stmt2 = stmt2.where(StrengthSession.date >= _date.fromisoformat(start_date))
     if end_date: stmt2 = stmt2.where(StrengthSession.date <= _date.fromisoformat(end_date))
     for s in db.exec(stmt2).all():
-        item = SSR.model_validate(s).model_dump()
-        item["sets"] = [StrengthSetRead.model_validate(s2).model_dump() for s2 in (s.sets or [])]
+        db.expunge(s)
+        item = SSR.model_validate(s).model_dump(mode="json")
+        item["sets"] = [StrengthSetRead.model_validate(s2).model_dump(mode="json") for s2 in (s.sets or [])]
         result["strength_sessions"].append(item)
 
     stmt3 = select(CardioSession).order_by(CardioSession.date)
     if start_date: stmt3 = stmt3.where(CardioSession.date >= _date.fromisoformat(start_date))
     if end_date: stmt3 = stmt3.where(CardioSession.date <= _date.fromisoformat(end_date))
-    result["cardio_sessions"] = [CSR.model_validate(c).model_dump() for c in db.exec(stmt3).all()]
+    result["cardio_sessions"] = [CSR.model_validate(c).model_dump(mode="json") for c in db.exec(stmt3).all()]
 
     stmt4 = select(LifestyleSession).order_by(LifestyleSession.date)
     if start_date: stmt4 = stmt4.where(LifestyleSession.date >= _date.fromisoformat(start_date))
     if end_date: stmt4 = stmt4.where(LifestyleSession.date <= _date.fromisoformat(end_date))
-    result["lifestyle_sessions"] = [LSR.model_validate(l).model_dump() for l in db.exec(stmt4).all()]
+    result["lifestyle_sessions"] = [LSR.model_validate(l).model_dump(mode="json") for l in db.exec(stmt4).all()]
 
     stmt5 = select(NutritionLog).order_by(NutritionLog.date)
     if start_date: stmt5 = stmt5.where(NutritionLog.date >= _date.fromisoformat(start_date))
     if end_date: stmt5 = stmt5.where(NutritionLog.date <= _date.fromisoformat(end_date))
-    result["nutrition_logs"] = [NLR.model_validate(n).model_dump() for n in db.exec(stmt5).all()]
+    result["nutrition_logs"] = [NLR.model_validate(n).model_dump(mode="json") for n in db.exec(stmt5).all()]
 
     for inj in db.exec(select(InjuryLog)).all():
-        result["injury_logs"].append(IIR.model_validate(inj).model_dump())
+        db.expunge(inj)
+        result["injury_logs"].append(IIR.model_validate(inj).model_dump(mode="json"))
 
+    db.close()
     return JSONResponse(content=result)

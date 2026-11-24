@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlmodel import Session, select, desc
 from typing import List, Optional
 import httpx
@@ -12,10 +12,10 @@ settings = get_settings()
 router = APIRouter()
 
 
-async def _call_llm(prompt: str, user_conv: Optional[str] = None) -> str:
+def _call_llm(prompt: str, user_conv: Optional[str] = None) -> str:
     """Call LLM via OpenAI-compatible API if configured, otherwise return a placeholder."""
     api_key = settings.llm_api_key
-    api_url = settings.llm_api_url or "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+    api_url = settings.llm_api_url or "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
     if not api_key:
         return (
@@ -66,10 +66,10 @@ async def _call_llm(prompt: str, user_conv: Optional[str] = None) -> str:
 
 
 @router.post("/", response_model=ConversationRead, status_code=201)
-async def create_conversation(conv: ConversationCreate, db: Session = Depends(get_db)):
+def create_conversation(conv: ConversationCreate, db: Session = Depends(get_db)):
     llm_response = ""
     if conv.session_summary and conv.llm_response is not None and not conv.llm_response:
-        llm_response = await _call_llm(conv.session_summary)
+        llm_response = _call_llm(conv.session_summary)
 
     db_conv = ConversationModel(
         user_id=conv.user_id,
@@ -110,9 +110,9 @@ def delete_conversation(conv_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/ask", response_model=ConversationRead, status_code=201)
-async def ask_butler(prompt: str, db: Session = Depends(get_db)):
+def ask_butler(prompt: str = Body(..., embed=True), db: Session = Depends(get_db)):
     """Quick ask — creates a conversation entry with LLM response."""
-    response = await _call_llm(prompt)
+    response = _call_llm(prompt)
     db_conv = ConversationModel(
         user_id=0,
         session_type="ask",

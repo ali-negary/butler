@@ -39,9 +39,9 @@ def test_db():
 @pytest.fixture()
 async def client(test_db):
     from app.main import app
-    from app.core.db import get_db
+    from app.api.dependencies import get_db
 
-    async def override_get_db():
+    def override_get_db():
         yield test_db
 
     app.dependency_overrides[get_db] = override_get_db
