@@ -13,32 +13,54 @@ router = APIRouter()
 
 
 async def _call_llm(prompt: str, user_conv: Optional[str] = None) -> str:
-    """Call OpenAI if API key is configured, otherwise return a placeholder."""
-    if not settings.openai_api_key:
-        return "🤖 Butler: LLM not configured. Set OPENAI_API_KEY in your .env file to enable AI responses."
+    """Call LLM via OpenAI-compatible API if configured, otherwise return a placeholder."""
+    api_key = settings.llm_api_key
+    api_url = settings.llm_api_url or "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+
+    if not api_key:
+        return (
+            "🤖 Butler: LLM not configured. Set LLM_API_KEY in your .env file "
+            "to enable AI responses. Leave LLM_API_URL blank to use the default Gemini URL, "
+            "or point it to any OpenAI-compatible endpoint."
+        )
 
     system_prompt = (
         "You are Butler, a personal health and fitness coach. "
         "You analyze the user's vitals, workouts, nutrition, and injuries "
         "to give actionable, evidence-based advice. Be concise and practical."
     )
-    messages = [
-        {"role": "system", "content": system_prompt},
-    ]
+    messages = [{"role": "system", "content": system_prompt}]
     if user_conv:
         messages.append({"role": "user", "content": user_conv})
     messages.append({"role": "user", "content": prompt})
 
     try:
-        resp = httpx.post(
-            "https://api.openai.com/v1/chat/completions",
-            json={"model": "gpt-4o-mini", "messages": messages, "max_tokens": 500},
-            headers={"Authorization": f"Bearer {settings.openai_api_key}"},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        return data["choices"][0]["message"]["content"]
+        # Detect if URL is a Google Gemini URL (uses API key in URL or header)
+        if "googleapis.com" in api_url:
+            resp = httpx.post(
+                api_url,
+                json={"contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                      "system_instruction": {"parts": [{"text": system_prompt}]}},
+                headers={"x-goog-api-key": api_key},
+                timeout=30,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            try:
+                return data["candidates"][0]["content"]["parts"][0]["text"]
+            except (KeyError, IndexError):
+                return "⚠️ Unexpected LLM response format."
+        else:
+            # OpenAI-compatible endpoint
+            resp = httpx.post(
+                api_url,
+                json={"model": settings.llm_model or "gpt-4o-mini", "messages": messages, "max_tokens": 500},
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=30,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
     except Exception as exc:
         return f"⚠️ LLM error: {exc}"
 

@@ -16,7 +16,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 * 7
 
-    openai_api_key: str = ""
+    llm_api_key: str = ""
+    llm_api_url: str = ""
+    llm_model: str = "models/gemini-2.0-flash"
 
     strava_client_id: str = ""
     strava_client_secret: str = ""
