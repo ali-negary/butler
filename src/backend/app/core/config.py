@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     postgres_db: str = "fitness_tracker"
     database_url: str = ""
+    use_sqlite: str = "false"
 
     jwt_secret_key: str = ""
     jwt_algorithm: str = "HS256"
@@ -24,7 +25,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=True,
+        case_sensitive=False,
     )
 
     @property
@@ -35,9 +36,10 @@ class Settings(BaseSettings):
 
     def model_post_init(self, *_args, **_kwargs):
         if not self.database_url:
-            if os.getenv("DATABASE_URL"):
-                self.database_url = os.getenv("DATABASE_URL")
-            elif os.getenv("USE_SQLITE") == "true":
+            db_url = os.getenv("DATABASE_URL")
+            if db_url:
+                self.database_url = db_url
+            elif self.use_sqlite == "true":
                 self.database_url = "sqlite+aiosqlite:///./fitness_tracker.db"
             else:
                 self.database_url = (

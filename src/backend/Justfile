@@ -1,0 +1,61 @@
+# Project Butler — backend commands
+# Usage: just <recipe>   (run from src/backend/)
+
+PYTHON   := "../../.venv/bin/python"
+PIP      := "../../.venv/bin/pip"
+UVICORN  := "../../.venv/bin/uvicorn"
+MYPY     := "../../.venv/bin/mypy"
+PYTEST   := "../../.venv/bin/pytest"
+
+export PYTHONPATH := "./"
+
+# Create .env from example if it doesn't exist
+env:
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo ".env created from .env.example"; \
+	fi
+
+# Install dependencies
+requirements: env
+	../../.venv/bin/pip install -r requirements.txt
+
+# Run dev server (auto-reload)
+run: requirements
+	../../.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Run production server
+run-prod: requirements
+	../../.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+
+# Run all tests (verbose)
+test: requirements
+	../../.venv/bin/pytest tests/ -v
+
+# Run tests (fast, no headers)
+test-fast: requirements
+	../../.venv/bin/pytest tests/ -q --tb=short
+
+# Run mypy type checker
+lint: requirements
+	../../.venv/bin/mypy app/ --ignore-missing-imports 2>/dev/null || true
+
+# Docker: build and start (Postgres + API)
+docker-up:
+	docker compose up --build
+
+# Docker: stop and remove
+docker-down:
+	docker compose down --remove-orphans
+
+# Docker: stream logs
+docker-logs:
+	docker compose logs -f
+
+# Generate a random JWT secret
+generate-jwt-secret: requirements
+	../../.venv/bin/python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# Open Swagger docs in browser (starts dev server)
+swagger: run
+	@echo "Open http://localhost:8000/docs in your browser"
